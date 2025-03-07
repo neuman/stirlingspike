@@ -1,0 +1,70 @@
+omcoutput/
+stirlingspike_venv/
+
+# Python-specific
+pyvenv.cfg
+bin/
+lib/
+lib64
+share/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+*.coverage
+*.pytest_cache/
+.coverage.*
+*.pyc
+.cache/
+*.log
+*.sqlite3
+*.db
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode and IDE-related files
+.vscode/
+.idea/
+*.swp
+
+# OpenModelica-specific
+*.bak
+*.log
+*.xml
+*.mos
+*.c
+*.o
+*.h
+*.makefile
+*.libs
+*.omc
+*.json
+
+# OpenModelica simulation files
+*.mat
+*.res
+*.fmu
+*.exe
+*.log
+
+# System-specific files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+~$*
