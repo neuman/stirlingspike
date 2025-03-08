@@ -23,7 +23,7 @@ model SimpleSystem
   parameter Real mixtureVolume = 0.096 "Volume of the mixture (96% of vessel) in m^3";
   parameter Real mixtureMass = mixtureDensity*mixtureVolume "Mass of the mixture in kg ~100 kg";
   
-  // NEW: Parameters for the buried cylinder
+  // Parameters for the buried cylinder
   parameter Real cylinderDiameter = 0.6096 "Cylinder diameter (24 inches) in m";
   parameter Real cylinderLength = 10.0 "Cylinder length in m";
   parameter Real cylinderRadius = cylinderDiameter/2 "Cylinder radius in m";
@@ -46,6 +46,14 @@ model SimpleSystem
   parameter Real groundThermalConductivity = 1.5 "Thermal conductivity of ground soil in W/(m.K)";
   parameter Real cylinderGroundContactConductance = 15.0 "Thermal contact conductance between cylinder and ground in W/(m^2.K)";
   
+  // NEW: Parameters for the Stirling engine
+  parameter Real stirlingEngineEfficiency = 0.5 "Efficiency of the Stirling engine";
+  parameter Real stirlingMinimumTemperatureDifference = 15.0 "Minimum temperature difference for Stirling engine operation in K";
+  parameter Real stirlingHeatTransferCoefficient = 100.0 "Heat transfer coefficient for Stirling engine in W/(m^2.K)";
+  parameter Real stirlingContactAreaHot = 0.15 "Contact area between vessel and Stirling engine (hot side) in m^2";
+  parameter Real stirlingContactAreaCold = 0.15 "Contact area between cylinder and Stirling engine (cold side) in m^2";
+  parameter Real stirlingCarnotFactor = 0.4 "Factor of ideal Carnot efficiency achievable";
+  
   // Environment parameters
   parameter Real stefanBoltzmannConstant = 5.67e-8 "Stefan-Boltzmann constant in W/(m^2.K^4)";
   parameter Real panelConvectionCoefficient = 12.0 "Convective heat transfer coefficient for panel in W/(m^2.K)";
@@ -56,8 +64,6 @@ model SimpleSystem
   import Modelica.Blocks.Sources.CombiTimeTable;
   
   // CombiTimeTable for reading ambient temperature and solar irradiance from CSV
-  // Updated to match the specific CSV format with row numbers and # headers
-  // Replace your CombiTimeTable with this implementation
   Modelica.Blocks.Sources.CombiTimeTable weatherData(
     tableOnFile = false,  // Use inline data instead of file
     table = [
@@ -106,11 +112,19 @@ model SimpleSystem
   Real heatTransferPanelToVessel "Heat transfer from panel to vessel in W";
   Real heatLossVessel "Heat loss from vessel to environment in W";
   
-  // NEW: Variables for cylinder heat flows
-  Real heatTransferVesselToCylinder "Heat transfer from vessel to cylinder in W";
+  // Variables for cylinder heat flows
   Real heatTransferCylinderToGround "Heat transfer from cylinder to ground in W";
   Real heatLossCylinderInsulated "Heat loss through insulated portion of cylinder in W";
   Real heatLossCylinderExposed "Heat loss through exposed portion of cylinder in W";
+  
+  // NEW: Variables for Stirling engine heat flows and power
+  Real stirlingTemperatureDifference "Temperature difference between hot and cold sides of the Stirling engine in K";
+  Real stirlingHeatFlowHot "Heat flow from the vessel (hot side) to the Stirling engine in W";
+  Real stirlingHeatFlowCold "Heat flow from the Stirling engine to the cylinder (cold side) in W";
+  Real stirlingPowerOutput "Electrical power output from the Stirling engine in W";
+  Real stirlingCarnotEfficiency "Carnot efficiency based on temperature difference";
+  Real stirlingActualEfficiency "Actual efficiency of the Stirling engine";
+  Real stirlingTotalPowerOutput "Total electrical power output from both solar panel and Stirling engine in W";
   
 equation
   // Get ambient temperature and solar irradiance from CSV
@@ -132,20 +146,43 @@ equation
   // Heat loss from vessel to environment
   heatLossVessel = vesselConvectionCoefficient * vesselWallArea * (mixtureTemperature - ambientTemperature);
   
-  // NEW: Heat transfer from vessel to cylinder
-  heatTransferVesselToCylinder = contactConductanceCylinderVessel * contactAreaCylinderVessel * (mixtureTemperature - cylinderMixtureTemperature);
+  // NEW: Stirling engine calculations
+  stirlingTemperatureDifference = max(0, mixtureTemperature - cylinderMixtureTemperature);
+  
+  // Theoretical Carnot efficiency
+  stirlingCarnotEfficiency = if stirlingTemperatureDifference > stirlingMinimumTemperatureDifference then 
+                               1 - cylinderMixtureTemperature/mixtureTemperature 
+                             else 
+                               0;
+  
+  // Actual achievable efficiency (limited by stirlingCarnotFactor and max efficiency)
+  stirlingActualEfficiency = min(stirlingEngineEfficiency, stirlingCarnotFactor * stirlingCarnotEfficiency);
+  
+  // Heat flow calculations for Stirling engine
+  stirlingHeatFlowHot = if stirlingTemperatureDifference > stirlingMinimumTemperatureDifference then
+                          stirlingHeatTransferCoefficient * stirlingContactAreaHot * stirlingTemperatureDifference
+                        else
+                          0;
+  
+  // Power output calculation - heat converted to electricity
+  stirlingPowerOutput = stirlingHeatFlowHot * stirlingActualEfficiency;
+  
+  // Heat flow to cold side (after conversion of some heat to electricity)
+  stirlingHeatFlowCold = stirlingHeatFlowHot - stirlingPowerOutput;
+  
+  // Total electrical power output (solar panel + Stirling engine)
+  stirlingTotalPowerOutput = electricalPowerOutput + stirlingPowerOutput;
   
   // NEW: Heat transfer from cylinder to ground (at bottom)
   heatTransferCylinderToGround = cylinderGroundContactConductance * cylinderBottomArea * (cylinderMixtureTemperature - groundTemperature);
   
-  // NEW: Heat loss through insulated portion of cylinder
-  // Using composite resistance for insulated wall: R = R_wall + R_insulation
+  // Heat loss through insulated portion of cylinder
   heatLossCylinderInsulated = cylinderInsulatedSurfaceArea * 
                              (cylinderMixtureTemperature - ambientTemperature) / 
                              (cylinderWallThickness/cylinderWallThermalConductivity + 
                               cylinderInsulationThickness/cylinderInsulationThermalConductivity);
   
-  // NEW: Heat loss through exposed portion of cylinder
+  // Heat loss through exposed portion of cylinder
   heatLossCylinderExposed = vesselConvectionCoefficient * cylinderExposedSurfaceArea * 
                            (cylinderMixtureTemperature - ambientTemperature);
   
@@ -153,13 +190,15 @@ equation
   panelMass * panelSpecificHeat * der(panelTemperature) = 
     thermalPowerAbsorbed - radiativeLossPanel - convectiveLossPanel - heatTransferPanelToVessel;
   
-  // Energy balance for the glycol-water mixture in the vessel
+  // UPDATED: Energy balance for the glycol-water mixture in the vessel
+  // Now includes heat flow to the Stirling engine
   mixtureMass * mixtureSpecificHeat * der(mixtureTemperature) = 
-    heatTransferPanelToVessel - heatLossVessel - heatTransferVesselToCylinder;
+    heatTransferPanelToVessel - heatLossVessel - stirlingHeatFlowHot;
   
-  // NEW: Energy balance for the glycol-water mixture in the cylinder
+  // UPDATED: Energy balance for the glycol-water mixture in the cylinder
+  // Now receives heat from the Stirling engine cold side
   cylinderMixtureMass * mixtureSpecificHeat * der(cylinderMixtureTemperature) = 
-    heatTransferVesselToCylinder - heatTransferCylinderToGround - 
+    stirlingHeatFlowCold - heatTransferCylinderToGround - 
     heatLossCylinderInsulated - heatLossCylinderExposed;
   
   annotation(experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-6, Interval = 3600));

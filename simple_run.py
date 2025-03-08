@@ -158,8 +158,8 @@ if os.path.exists(data_file):
         
         # Plot all heat flows
         ax4.plot(hours, data["thermalPowerAbsorbed"], 'r-', linewidth=2, label="Thermal Absorption")
-        ax4.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
-        ax4.plot(hours, data["heatTransferVesselToCylinder"], 'c-', linewidth=2, label="Vessel→Cylinder Transfer")
+        #ax4.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
+        #ax4.plot(hours, data["heatTransferVesselToCylinder"], 'c-', linewidth=2, label="Vessel→Cylinder Transfer")
         ax4.plot(hours, data["heatTransferCylinderToGround"], 'b--', linewidth=2, label="Cylinder→Ground Transfer")
         ax4.plot(hours, data["heatLossCylinderInsulated"], 'g--', linewidth=2, label="Cylinder Insulated Loss")
         ax4.plot(hours, data["heatLossCylinderExposed"], 'y--', linewidth=2, label="Cylinder Exposed Loss")
@@ -182,7 +182,7 @@ if os.path.exists(data_file):
         ax5.plot(hours, data["thermalPowerAbsorbed"], 'r-', linewidth=2, label="Thermal Absorption")
         ax5.plot(hours, data["radiativeLossPanel"], 'c-', linewidth=2, label="Radiative Loss")
         ax5.plot(hours, data["convectiveLossPanel"], 'b-', linewidth=2, label="Convective Loss (Panel)")
-        ax5.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
+        #ax5.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
         ax5.plot(hours, data["heatLossVessel"], 'k-', linewidth=2, label="Vessel Heat Loss")
         
         ax5.set_title("Heat Flow Analysis - Original System", fontsize=16)
@@ -223,7 +223,7 @@ if os.path.exists(data_file):
         total_electrical_energy = np.trapezoid(data["electricalPowerOutput"], data["time"]) / 3600  # Wh
         total_thermal_energy = np.trapezoid(data["thermalPowerAbsorbed"], data["time"]) / 3600  # Wh
         total_cylinder_ground_energy = np.trapezoid(data["heatTransferCylinderToGround"], data["time"]) / 3600  # Wh
-        cylinder_energy_gain = np.trapezoid(data["heatTransferVesselToCylinder"], data["time"]) / 3600  # Wh
+        #cylinder_energy_gain = np.trapezoid(data["heatTransferVesselToCylinder"], data["time"]) / 3600  # Wh
         
         print("\n===== SIMULATION SUMMARY =====")
         print(f"Maximum Solar Panel Temperature: {max_panel_temp:.2f}°C")
@@ -231,7 +231,7 @@ if os.path.exists(data_file):
         print(f"Maximum Cylinder Temperature: {max_cylinder_temp:.2f}°C")
         print(f"Total Electrical Energy Production: {total_electrical_energy:.2f} Wh")
         print(f"Total Thermal Energy Absorbed: {total_thermal_energy:.2f} Wh")
-        print(f"Total Energy Transferred to Cylinder: {cylinder_energy_gain:.2f} Wh")
+        #print(f"Total Energy Transferred to Cylinder: {cylinder_energy_gain:.2f} Wh")
         print(f"Total Energy Lost to Ground: {total_cylinder_ground_energy:.2f} Wh")
         print(f"Upper Vessel Temperature Rise: {data['mixtureTemperature_C'].iloc[-1] - data['mixtureTemperature_C'].iloc[0]:.2f}°C")
         print(f"Cylinder Temperature Rise: {data['cylinderMixtureTemperature_C'].iloc[-1] - data['cylinderMixtureTemperature_C'].iloc[0]:.2f}°C")
@@ -245,7 +245,7 @@ if os.path.exists(data_file):
         total_thermal_energy = np.trapezoid(data["thermalPowerAbsorbed"], data["time"]) / 3600  # Wh
         panel_to_vessel = np.trapezoid(data["heatTransferPanelToVessel"], data["time"]) / 3600  # Wh
         vessel_to_ambient = np.trapz(data["heatLossVessel"], data["time"]) / 3600  # Wh
-        vessel_to_cylinder = np.trapz(data["heatTransferVesselToCylinder"], data["time"]) / 3600  # Wh
+        #vessel_to_cylinder = np.trapz(data["heatTransferVesselToCylinder"], data["time"]) / 3600  # Wh
         cylinder_to_ground = np.trapz(data["heatTransferCylinderToGround"], data["time"]) / 3600  # Wh
         cylinder_insulated_loss = np.trapz(data["heatLossCylinderInsulated"], data["time"]) / 3600  # Wh
         cylinder_exposed_loss = np.trapz(data["heatLossCylinderExposed"], data["time"]) / 3600  # Wh
@@ -260,13 +260,12 @@ if os.path.exists(data_file):
         
         energy_values = [
             total_solar_energy, total_electrical_energy, total_thermal_energy,
-            panel_to_vessel, vessel_to_ambient,
-            vessel_to_cylinder, cylinder_to_ground,
+            panel_to_vessel, vessel_to_ambient, cylinder_to_ground,
             cylinder_insulated_loss, cylinder_exposed_loss
         ]
-        
+        '''
         # Create colormap for energy flows
-        colors = ['yellow', 'green', 'red', 'magenta', 'black', 'cyan', 'blue', 'lightgreen', 'orange']
+        colors = ['yellow', 'green', 'red', 'magenta', 'black', 'cyan', 'blue', 'lightgreen']
         
         # Plot bars
         bars = ax7.bar(energy_types, energy_values, color=colors, alpha=0.7)
@@ -284,7 +283,7 @@ if os.path.exists(data_file):
         ax7.set_ylabel("Energy (Wh)", fontsize=12)
         ax7.set_xticklabels(energy_types, rotation=45, ha='right')
         ax7.grid(True, alpha=0.3, axis='y')
-        
+        '''
         plt.tight_layout()
         plt.savefig("omcoutput/energy_flow_summary_24h.png", dpi=300, bbox_inches='tight')
         
