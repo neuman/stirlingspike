@@ -23,6 +23,29 @@ model SimpleSystem
   parameter Real mixtureVolume = 0.096 "Volume of the mixture (96% of vessel) in m^3";
   parameter Real mixtureMass = mixtureDensity*mixtureVolume "Mass of the mixture in kg ~100 kg";
   
+  // NEW: Parameters for the buried cylinder
+  parameter Real cylinderDiameter = 0.6096 "Cylinder diameter (24 inches) in m";
+  parameter Real cylinderLength = 10.0 "Cylinder length in m";
+  parameter Real cylinderRadius = cylinderDiameter/2 "Cylinder radius in m";
+  parameter Real cylinderInsulationThickness = 0.05 "Insulation thickness (5cm) in m";
+  parameter Real cylinderInsulationLength = 9.0 "Length of insulated portion in m";
+  parameter Real cylinderExposedLength = cylinderLength - cylinderInsulationLength "Length of exposed portion in m";
+  parameter Real cylinderVolume = Modelica.Constants.pi * cylinderRadius^2 * cylinderLength "Volume of cylinder in m^3";
+  parameter Real cylinderMixtureVolume = 0.96 * cylinderVolume "Volume of mixture in cylinder (96%) in m^3";
+  parameter Real cylinderMixtureMass = mixtureDensity * cylinderMixtureVolume "Mass of mixture in cylinder in kg";
+  parameter Real cylinderWallThickness = 0.01 "Thickness of cylinder wall in m";
+  parameter Real cylinderWallThermalConductivity = 16.0 "Thermal conductivity of cylinder wall (steel) in W/(m.K)";
+  parameter Real cylinderInsulationThermalConductivity = 0.035 "Thermal conductivity of foam insulation in W/(m.K)";
+  parameter Real cylinderInsulatedSurfaceArea = 2 * Modelica.Constants.pi * cylinderRadius * cylinderInsulationLength "Surface area of insulated portion in m^2";
+  parameter Real cylinderExposedSurfaceArea = 2 * Modelica.Constants.pi * cylinderRadius * cylinderExposedLength "Surface area of exposed portion in m^2";
+  parameter Real cylinderBottomArea = Modelica.Constants.pi * cylinderRadius^2 "Bottom area of cylinder in m^2";
+  parameter Real cylinderTopArea = cylinderBottomArea "Top area of cylinder in m^2";
+  parameter Real contactAreaCylinderVessel = 0.2 "Contact area between cylinder and vessel in m^2";
+  parameter Real contactConductanceCylinderVessel = 200.0 "Thermal contact conductance between cylinder and vessel in W/(m^2.K)";
+  parameter Real groundTemperature = (55.0 + 459.67) * 5/9 "Ground temperature (55F) in Kelvin";
+  parameter Real groundThermalConductivity = 1.5 "Thermal conductivity of ground soil in W/(m.K)";
+  parameter Real cylinderGroundContactConductance = 15.0 "Thermal contact conductance between cylinder and ground in W/(m^2.K)";
+  
   // Environment parameters
   parameter Real stefanBoltzmannConstant = 5.67e-8 "Stefan-Boltzmann constant in W/(m^2.K^4)";
   parameter Real panelConvectionCoefficient = 12.0 "Convective heat transfer coefficient for panel in W/(m^2.K)";
@@ -34,7 +57,7 @@ model SimpleSystem
   
   // CombiTimeTable for reading ambient temperature and solar irradiance from CSV
   // Updated to match the specific CSV format with row numbers and # headers
-// Replace your CombiTimeTable with this implementation
+  // Replace your CombiTimeTable with this implementation
   Modelica.Blocks.Sources.CombiTimeTable weatherData(
     tableOnFile = false,  // Use inline data instead of file
     table = [
@@ -70,6 +93,7 @@ model SimpleSystem
   // Variables: Temperatures
   Real panelTemperature(start=293.15, fixed=true) "Initial temperature of the solar panel in K";
   Real mixtureTemperature(start=293.15, fixed=true) "Initial temperature of the glycol-water mixture in K";
+  Real cylinderMixtureTemperature(start=285.93, fixed=true) "Initial temperature of the cylinder mixture in K (starting at mean of ambient and ground)";
   Real ambientTemperature "Ambient temperature in K";
   Real solarIrradiance "Solar irradiance in W/m^2";
   
@@ -81,6 +105,12 @@ model SimpleSystem
   Real convectiveLossPanel "Convective heat loss from panel in W";
   Real heatTransferPanelToVessel "Heat transfer from panel to vessel in W";
   Real heatLossVessel "Heat loss from vessel to environment in W";
+  
+  // NEW: Variables for cylinder heat flows
+  Real heatTransferVesselToCylinder "Heat transfer from vessel to cylinder in W";
+  Real heatTransferCylinderToGround "Heat transfer from cylinder to ground in W";
+  Real heatLossCylinderInsulated "Heat loss through insulated portion of cylinder in W";
+  Real heatLossCylinderExposed "Heat loss through exposed portion of cylinder in W";
   
 equation
   // Get ambient temperature and solar irradiance from CSV
@@ -102,13 +132,35 @@ equation
   // Heat loss from vessel to environment
   heatLossVessel = vesselConvectionCoefficient * vesselWallArea * (mixtureTemperature - ambientTemperature);
   
+  // NEW: Heat transfer from vessel to cylinder
+  heatTransferVesselToCylinder = contactConductanceCylinderVessel * contactAreaCylinderVessel * (mixtureTemperature - cylinderMixtureTemperature);
+  
+  // NEW: Heat transfer from cylinder to ground (at bottom)
+  heatTransferCylinderToGround = cylinderGroundContactConductance * cylinderBottomArea * (cylinderMixtureTemperature - groundTemperature);
+  
+  // NEW: Heat loss through insulated portion of cylinder
+  // Using composite resistance for insulated wall: R = R_wall + R_insulation
+  heatLossCylinderInsulated = cylinderInsulatedSurfaceArea * 
+                             (cylinderMixtureTemperature - ambientTemperature) / 
+                             (cylinderWallThickness/cylinderWallThermalConductivity + 
+                              cylinderInsulationThickness/cylinderInsulationThermalConductivity);
+  
+  // NEW: Heat loss through exposed portion of cylinder
+  heatLossCylinderExposed = vesselConvectionCoefficient * cylinderExposedSurfaceArea * 
+                           (cylinderMixtureTemperature - ambientTemperature);
+  
   // Energy balance for the panel
   panelMass * panelSpecificHeat * der(panelTemperature) = 
     thermalPowerAbsorbed - radiativeLossPanel - convectiveLossPanel - heatTransferPanelToVessel;
   
-  // Energy balance for the glycol-water mixture
+  // Energy balance for the glycol-water mixture in the vessel
   mixtureMass * mixtureSpecificHeat * der(mixtureTemperature) = 
-    heatTransferPanelToVessel - heatLossVessel;
+    heatTransferPanelToVessel - heatLossVessel - heatTransferVesselToCylinder;
+  
+  // NEW: Energy balance for the glycol-water mixture in the cylinder
+  cylinderMixtureMass * mixtureSpecificHeat * der(cylinderMixtureTemperature) = 
+    heatTransferVesselToCylinder - heatTransferCylinderToGround - 
+    heatLossCylinderInsulated - heatLossCylinderExposed;
   
   annotation(experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-6, Interval = 3600));
 end SimpleSystem;
