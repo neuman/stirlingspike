@@ -1,4 +1,3 @@
-omcoutput/
 stirlingspike_venv/
 
 # Python-specific
@@ -52,6 +51,7 @@ env/
 *.libs
 *.omc
 *.json
+*.bin
 
 # OpenModelica simulation files
 *.mat
