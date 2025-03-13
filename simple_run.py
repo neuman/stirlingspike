@@ -96,125 +96,70 @@ if os.path.exists(data_file):
         data["ambientTemperature_C"] = data["ambientTemperature"] - 273.15
         data["groundTemperature_C"] = 12.78  # 55F converted to Celsius (constant)
         
-        # Create a figure with multiple subplots
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 12), gridspec_kw={'height_ratios': [2, 1]})
+        # Create a single figure with all plots stacked vertically
+        fig = plt.figure(figsize=(14, 20))  # Reduced height since we have one less plot
         
-        # Convert time from seconds to hours for better readability
-        hours = data["time"] / 3600
+        # Create subplots with specific heights (now 5 plots)
+        gs = fig.add_gridspec(5, 1, height_ratios=[2, 1, 1, 1, 1])
+        ax1 = fig.add_subplot(gs[0])  # Temperature plot
+        ax2 = fig.add_subplot(gs[1])  # Solar irradiance
+        ax3 = fig.add_subplot(gs[2])  # Power flows
+        ax4 = fig.add_subplot(gs[3])  # Cylinder heat flows
+        ax5 = fig.add_subplot(gs[4])  # Temperature gradients
+        
+        # Set x-axis formatting for all subplots
+        for ax in [ax1, ax2, ax3, ax4, ax5]:
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+            ax.xaxis.set_major_locator(mdates.HourLocator(interval=2))
+            ax.set_xlim(time_labels[0], time_labels[-1])
+            ax.grid(True, alpha=0.3)
         
         # Plot temperatures
-        ax1.plot(hours, data["panelTemperature_C"], 'r-', linewidth=2.5, label="Solar Panel")
-        ax1.plot(hours, data["mixtureTemperature_C"], 'b-', linewidth=2.5, label="Upper Vessel")
-        ax1.plot(hours, data["cylinderMixtureTemperature_C"], 'c-', linewidth=2.5, label="Cylinder")
-        ax1.plot(hours, data["ambientTemperature_C"], 'g--', linewidth=1.5, label="Ambient Temp")
-        #ax1.axhline(y=data["groundTemperature_C"], color='k', linestyle='--', linewidth=1.5, label="Ground Temp (55°F)")
+        ax1.plot(time_labels, data["panelTemperature_C"], 'r-', linewidth=2.5, label="Solar Panel")
+        ax1.plot(time_labels, data["mixtureTemperature_C"], 'b-', linewidth=2.5, label="Upper Vessel")
+        ax1.plot(time_labels, data["cylinderMixtureTemperature_C"], 'c-', linewidth=2.5, label="Cylinder")
+        ax1.plot(time_labels, data["ambientTemperature_C"], 'g--', linewidth=1.5, label="Ambient Temp")
         
         ax1.set_title("Temperature Evolution over 24 Hours", fontsize=16)
-        ax1.set_xlabel("Time (hours)", fontsize=12)
         ax1.set_ylabel("Temperature (°C)", fontsize=12)
-        ax1.grid(True, alpha=0.3)
         ax1.legend(fontsize=12, loc='upper left')
         
-        # Set x-axis limits
-        ax1.set_xlim(0, 24)
-        
-        # Add vertical grid lines at 2-hour intervals
-        ax1.set_xticks(range(0, 25, 2))
-        
-        # Plot solar irradiance on second subplot
-        ax2.bar(hours, data["solarIrradiance"], color='orange', alpha=0.7, width=0.4, label="Solar Irradiance")
-        ax2.set_xlabel("Time (hours)", fontsize=12)
+        # Plot solar irradiance
+        ax2.bar(time_labels, data["solarIrradiance"], color='orange', alpha=0.7, width=0.4, label="Solar Irradiance")
         ax2.set_ylabel("Solar Irradiance (W/m²)", fontsize=12)
-        ax2.set_xlim(0, 24)
-        ax2.set_xticks(range(0, 25, 2))
-        ax2.grid(True, alpha=0.3)
         ax2.legend(fontsize=12)
         
-        plt.tight_layout()
-        plt.savefig("omcoutput/solar_glycol_system_24h.png", dpi=300, bbox_inches='tight')
-        
-        # Create a second figure to analyze power flows
-        fig2, ax3 = plt.subplots(figsize=(14, 8))
-        
         # Plot power flows
-        ax3.plot(hours, data["totalSolarPower"], 'y-', linewidth=2, label="Total Solar Power")
-        ax3.plot(hours, data["electricalPowerOutput"], 'g-', linewidth=2, label="Electrical Output")
-        ax3.plot(hours, data["thermalPowerAbsorbed"], 'r-', linewidth=2, label="Thermal Absorption")
-        ax3.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
-        
+        ax3.plot(time_labels, data["electricalPowerOutput"], 'g-', linewidth=2, label="Electrical Output")
+        ax3.plot(time_labels, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
         ax3.set_title("Power Flow Analysis over 24 Hours", fontsize=16)
-        ax3.set_xlabel("Time (hours)", fontsize=12)
         ax3.set_ylabel("Power (W)", fontsize=12)
-        ax3.grid(True, alpha=0.3)
         ax3.legend(fontsize=12)
-        ax3.set_xlim(0, 24)
-        ax3.set_xticks(range(0, 25, 2))
         
-        plt.tight_layout()
-        plt.savefig("omcoutput/power_flow_analysis_24h.png", dpi=300, bbox_inches='tight')
-        
-        # Create a third figure showing all the heat flows including cylinder
-        fig3, ax4 = plt.subplots(figsize=(14, 8))
-        
-        # Plot all heat flows
-        ax4.plot(hours, data["thermalPowerAbsorbed"], 'r-', linewidth=2, label="Thermal Absorption")
-        #ax4.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
-        #ax4.plot(hours, data["heatTransferVesselToCylinder"], 'c-', linewidth=2, label="Vessel→Cylinder Transfer")
-        ax4.plot(hours, data["heatTransferCylinderToGround"], 'b--', linewidth=2, label="Cylinder→Ground Transfer")
-        ax4.plot(hours, data["heatLossCylinderInsulated"], 'g--', linewidth=2, label="Cylinder Insulated Loss")
-        ax4.plot(hours, data["heatLossCylinderExposed"], 'y--', linewidth=2, label="Cylinder Exposed Loss")
-        
+        # Plot cylinder heat flows
+        ax4.plot(time_labels, data["thermalPowerAbsorbed"], 'r-', linewidth=2, label="Thermal Absorption")
+        ax4.plot(time_labels, data["heatTransferCylinderToGround"], 'b--', linewidth=2, label="Cylinder→Ground Transfer")
+        ax4.plot(time_labels, data["heatLossCylinderInsulated"], 'g--', linewidth=2, label="Cylinder Insulated Loss")
+        ax4.plot(time_labels, data["heatLossCylinderExposed"], 'y--', linewidth=2, label="Cylinder Exposed Loss")
         ax4.set_title("Heat Flow Analysis - Cylinder System", fontsize=16)
-        ax4.set_xlabel("Time (hours)", fontsize=12)
         ax4.set_ylabel("Heat Flow (W)", fontsize=12)
-        ax4.grid(True, alpha=0.3)
         ax4.legend(fontsize=12)
-        ax4.set_xlim(0, 24)
-        ax4.set_xticks(range(0, 25, 2))
-        
-        plt.tight_layout()
-        plt.savefig("omcoutput/cylinder_heat_flow_analysis_24h.png", dpi=300, bbox_inches='tight')
-        
-        # Create a fourth figure showing all the original heat flows
-        fig4, ax5 = plt.subplots(figsize=(14, 8))
-        
-        # Plot original heat flows
-        ax5.plot(hours, data["thermalPowerAbsorbed"], 'r-', linewidth=2, label="Thermal Absorption")
-        ax5.plot(hours, data["radiativeLossPanel"], 'c-', linewidth=2, label="Radiative Loss")
-        ax5.plot(hours, data["convectiveLossPanel"], 'b-', linewidth=2, label="Convective Loss (Panel)")
-        #ax5.plot(hours, data["heatTransferPanelToVessel"], 'm-', linewidth=2, label="Panel→Vessel Transfer")
-        ax5.plot(hours, data["heatLossVessel"], 'k-', linewidth=2, label="Vessel Heat Loss")
-        
-        ax5.set_title("Heat Flow Analysis - Original System", fontsize=16)
-        ax5.set_xlabel("Time (hours)", fontsize=12)
-        ax5.set_ylabel("Heat Flow (W)", fontsize=12)
-        ax5.grid(True, alpha=0.3)
-        ax5.legend(fontsize=12)
-        ax5.set_xlim(0, 24)
-        ax5.set_xticks(range(0, 25, 2))
-        
-        plt.tight_layout()
-        plt.savefig("omcoutput/original_heat_flow_analysis_24h.png", dpi=300, bbox_inches='tight')
-
-        # Create a fifth figure showing temperature gradients in the system
-        fig5, ax6 = plt.subplots(figsize=(14, 8))
         
         # Plot temperature gradients
-        ax6.plot(hours, data["panelTemperature_C"] - data["mixtureTemperature_C"], 'r-', linewidth=2, label="Panel→Vessel Gradient")
-        ax6.plot(hours, data["mixtureTemperature_C"] - data["cylinderMixtureTemperature_C"], 'b-', linewidth=2, label="Vessel→Cylinder Gradient")
-        ax6.plot(hours, data["cylinderMixtureTemperature_C"] - data["groundTemperature_C"], 'g-', linewidth=2, label="Cylinder→Ground Gradient")
-        ax6.plot(hours, data["cylinderMixtureTemperature_C"] - data["ambientTemperature_C"], 'c--', linewidth=2, label="Cylinder→Ambient Gradient")
+        ax5.plot(time_labels, data["panelTemperature_C"] - data["mixtureTemperature_C"], 'r-', linewidth=2, label="Panel→Vessel Gradient")
+        ax5.plot(time_labels, data["mixtureTemperature_C"] - data["cylinderMixtureTemperature_C"], 'b-', linewidth=2, label="Vessel→Cylinder Gradient")
+        ax5.plot(time_labels, data["cylinderMixtureTemperature_C"] - data["groundTemperature_C"], 'g-', linewidth=2, label="Cylinder→Ground Gradient")
+        ax5.plot(time_labels, data["cylinderMixtureTemperature_C"] - data["ambientTemperature_C"], 'c--', linewidth=2, label="Cylinder→Ambient Gradient")
+        ax5.set_title("Temperature Gradients in the System", fontsize=16)
+        ax5.set_ylabel("Temperature Difference (°C)", fontsize=12)
+        ax5.legend(fontsize=12)
         
-        ax6.set_title("Temperature Gradients in the System", fontsize=16)
-        ax6.set_xlabel("Time (hours)", fontsize=12)
-        ax6.set_ylabel("Temperature Difference (°C)", fontsize=12)
-        ax6.grid(True, alpha=0.3)
-        ax6.legend(fontsize=12)
-        ax6.set_xlim(0, 24)
-        ax6.set_xticks(range(0, 25, 2))
+        # Set x-axis label only for the bottom plot
+        ax5.set_xlabel("Time", fontsize=12)
         
+        # Adjust layout and save
         plt.tight_layout()
-        plt.savefig("omcoutput/temperature_gradients_24h.png", dpi=300, bbox_inches='tight')
+        plt.savefig("omcoutput/combined_analysis_24h.png", dpi=300, bbox_inches='tight')
         
         # Generate a summary of the results including cylinder data
         max_panel_temp = data["panelTemperature_C"].max()
@@ -223,7 +168,6 @@ if os.path.exists(data_file):
         total_electrical_energy = np.trapezoid(data["electricalPowerOutput"], data["time"]) / 3600  # Wh
         total_thermal_energy = np.trapezoid(data["thermalPowerAbsorbed"], data["time"]) / 3600  # Wh
         total_cylinder_ground_energy = np.trapezoid(data["heatTransferCylinderToGround"], data["time"]) / 3600  # Wh
-        #cylinder_energy_gain = np.trapezoid(data["heatTransferVesselToCylinder"], data["time"]) / 3600  # Wh
         
         print("\n===== SIMULATION SUMMARY =====")
         print(f"Maximum Solar Panel Temperature: {max_panel_temp:.2f}°C")
@@ -231,7 +175,6 @@ if os.path.exists(data_file):
         print(f"Maximum Cylinder Temperature: {max_cylinder_temp:.2f}°C")
         print(f"Total Electrical Energy Production: {total_electrical_energy:.2f} Wh")
         print(f"Total Thermal Energy Absorbed: {total_thermal_energy:.2f} Wh")
-        #print(f"Total Energy Transferred to Cylinder: {cylinder_energy_gain:.2f} Wh")
         print(f"Total Energy Lost to Ground: {total_cylinder_ground_energy:.2f} Wh")
         print(f"Upper Vessel Temperature Rise: {data['mixtureTemperature_C'].iloc[-1] - data['mixtureTemperature_C'].iloc[0]:.2f}°C")
         print(f"Cylinder Temperature Rise: {data['cylinderMixtureTemperature_C'].iloc[-1] - data['cylinderMixtureTemperature_C'].iloc[0]:.2f}°C")
@@ -245,7 +188,6 @@ if os.path.exists(data_file):
         total_thermal_energy = np.trapezoid(data["thermalPowerAbsorbed"], data["time"]) / 3600  # Wh
         panel_to_vessel = np.trapezoid(data["heatTransferPanelToVessel"], data["time"]) / 3600  # Wh
         vessel_to_ambient = np.trapz(data["heatLossVessel"], data["time"]) / 3600  # Wh
-        #vessel_to_cylinder = np.trapz(data["heatTransferVesselToCylinder"], data["time"]) / 3600  # Wh
         cylinder_to_ground = np.trapz(data["heatTransferCylinderToGround"], data["time"]) / 3600  # Wh
         cylinder_insulated_loss = np.trapz(data["heatLossCylinderInsulated"], data["time"]) / 3600  # Wh
         cylinder_exposed_loss = np.trapz(data["heatLossCylinderExposed"], data["time"]) / 3600  # Wh
@@ -263,31 +205,11 @@ if os.path.exists(data_file):
             panel_to_vessel, vessel_to_ambient, cylinder_to_ground,
             cylinder_insulated_loss, cylinder_exposed_loss
         ]
-        '''
-        # Create colormap for energy flows
-        colors = ['yellow', 'green', 'red', 'magenta', 'black', 'cyan', 'blue', 'lightgreen']
         
-        # Plot bars
-        bars = ax7.bar(energy_types, energy_values, color=colors, alpha=0.7)
-        
-        # Add values on top of bars
-        for bar in bars:
-            height = bar.get_height()
-            ax7.annotate(f'{height:.1f} Wh',
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),
-                        textcoords="offset points",
-                        ha='center', va='bottom', rotation=90)
-        
-        ax7.set_title("24-Hour Energy Flow Summary", fontsize=16)
-        ax7.set_ylabel("Energy (Wh)", fontsize=12)
-        ax7.set_xticklabels(energy_types, rotation=45, ha='right')
-        ax7.grid(True, alpha=0.3, axis='y')
-        '''
         plt.tight_layout()
         plt.savefig("omcoutput/energy_flow_summary_24h.png", dpi=300, bbox_inches='tight')
         
-        plt.show()
+        #plt.show()
         
     else:
         print("Error: Required temperature columns not found in simulation results")
