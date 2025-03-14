@@ -3,7 +3,7 @@ model SimpleSystem
   parameter Real panelArea = 1.0 "Area of the solar panel in m^2";
   parameter Real panelMass = 20.0 "Mass of the solar panel in kg";
   parameter Real panelSpecificHeat = 900.0 "Specific heat capacity of panel (aluminum) in J/(kg.K)";
-  parameter Real panelAbsorptivity = 0.95 "Solar absorptivity of the panel";
+  parameter Real panelAbsorptivity = 0.98 "Solar absorptivity of the panel";
   parameter Real panelEmissivity = 0.85 "Thermal emissivity of the panel";
   parameter Real panelThermalConductivity = 237.0 "Thermal conductivity of panel (aluminum) in W/(m.K)";
   parameter Real panelThickness = 0.005 "Thickness of the panel in m";
@@ -34,15 +34,15 @@ model SimpleSystem
   parameter Real cylinderDiameter = 0.6096 "Cylinder diameter (24 inches) in m";
   parameter Real cylinderLength = 10.0 "Cylinder length in m";
   parameter Real cylinderRadius = cylinderDiameter/2 "Cylinder radius in m";
-  parameter Real cylinderInsulationThickness = 0.05 "Insulation thickness (5cm) in m";
-  parameter Real cylinderInsulationLength = 9.0 "Length of insulated portion in m";
+  parameter Real cylinderInsulationThickness = 0.1 "Insulation thickness (10cm) in m";
+  parameter Real cylinderInsulationLength = 9.5 "Length of insulated portion in m";
   parameter Real cylinderExposedLength = cylinderLength - cylinderInsulationLength "Length of exposed portion in m";
   parameter Real cylinderVolume = Modelica.Constants.pi * cylinderRadius^2 * cylinderLength "Volume of cylinder in m^3";
   parameter Real cylinderMixtureVolume = 0.96 * cylinderVolume "Volume of mixture in cylinder (96%) in m^3";
   parameter Real cylinderMixtureMass = mixtureDensity * cylinderMixtureVolume "Mass of mixture in cylinder in kg";
   parameter Real cylinderWallThickness = 0.01 "Thickness of cylinder wall in m";
   parameter Real cylinderWallThermalConductivity = 16.0 "Thermal conductivity of cylinder wall (steel) in W/(m.K)";
-  parameter Real cylinderInsulationThermalConductivity = 0.035 "Thermal conductivity of foam insulation in W/(m.K)";
+  parameter Real cylinderInsulationThermalConductivity = 0.04 "Thermal conductivity of foam insulation in W/(m.K)";
   parameter Real cylinderInsulatedSurfaceArea = 2 * Modelica.Constants.pi * cylinderRadius * cylinderInsulationLength "Surface area of insulated portion in m^2";
   parameter Real cylinderExposedSurfaceArea = 2 * Modelica.Constants.pi * cylinderRadius * cylinderExposedLength "Surface area of exposed portion in m^2";
   parameter Real cylinderBottomArea = Modelica.Constants.pi * cylinderRadius^2 "Bottom area of cylinder in m^2";
@@ -51,7 +51,7 @@ model SimpleSystem
   parameter Real contactConductanceCylinderVessel = 200.0 "Thermal contact conductance between cylinder and vessel in W/(m^2.K)";
   parameter Real groundTemperature = (55.0 + 459.67) * 5/9 "Ground temperature (55F) in Kelvin";
   parameter Real groundThermalConductivity = 1.5 "Thermal conductivity of ground soil in W/(m.K)";
-  parameter Real cylinderGroundContactConductance = 15.0 "Thermal contact conductance between cylinder and ground in W/(m^2.K)";
+  parameter Real cylinderGroundContactConductance = 50.0 "Thermal contact conductance between cylinder and ground in W/(m^2.K)";
   
   // NEW: Parameters for the Stirling engine
   parameter Real stirlingEngineEfficiency = 0.5 "Efficiency of the Stirling engine";
@@ -63,9 +63,9 @@ model SimpleSystem
   
   // Environment parameters
   parameter Real stefanBoltzmannConstant = 5.67e-8 "Stefan-Boltzmann constant in W/(m^2.K^4)";
-  parameter Real panelConvectionCoefficient = 12.0 "Convective heat transfer coefficient for panel in W/(m^2.K)";
+  parameter Real panelConvectionCoefficient = 5.0 "Convective heat transfer coefficient for panel in W/(m^2.K)";
   parameter Real vesselConvectionCoefficient = 3.0 "Convective heat transfer coefficient for vessel in W/(m^2.K)";
-  parameter Real contactConductance = 500.0 "Thermal contact conductance between panel and vessel in W/(m^2.K)";
+  parameter Real contactConductance = 200.0 "Thermal contact conductance between panel and vessel in W/(m^2.K)";
   
   // Import CombiTimeTable for reading external data
   import Modelica.Blocks.Sources.CombiTimeTable;
@@ -74,31 +74,31 @@ model SimpleSystem
   Modelica.Blocks.Sources.CombiTimeTable weatherData(
     tableOnFile = false,  // Use inline data instead of file
     table = [
-      0, 15.0, 0.0;
-      3600, 14.2, 0.0;
-      7200, 13.8, 0.0;
-      10800, 13.5, 0.0;
-      14400, 13.0, 0.0;
-      18000, 12.8, 0.0;
-      21600, 13.2, 50.0;
-      25200, 14.5, 250.0;
-      28800, 16.2, 450.0;
-      32400, 18.5, 650.0;
-      36000, 20.6, 850.0;
-      39600, 23.0, 950.0;
-      43200, 25.5, 1000.0;
-      46800, 26.8, 950.0;
-      50400, 27.2, 850.0;
-      54000, 26.5, 650.0;
-      57600, 25.0, 450.0;
-      61200, 23.2, 250.0;
-      64800, 21.0, 100.0;
-      68400, 19.5, 0.0;
-      72000, 18.2, 0.0;
-      75600, 17.4, 0.0;
-      79200, 16.5, 0.0;
-      82800, 15.8, 0.0;
-      86400, 15.2, 0.0
+      0, 29.44, 1.0;
+      3600, 29.44, 1.0;
+      7200, 29.44, 1.0;
+      10800, 29.44, 1.0;
+      14400, 32.78, 1.0;
+      18000, 32.78, 10.0;
+      21600, 33.89, 50.0;
+      25200, 35.00, 120.0;
+      28800, 36.11, 250.0;
+      32400, 37.22, 400.0;
+      36000, 38.33, 550.0;
+      39600, 39.44, 680.0;
+      43200, 40.56, 700.0;
+      46800, 41.67, 680.0;
+      50400, 40.56, 600.0;
+      54000, 39.44, 500.0;
+      57600, 38.33, 380.0;
+      61200, 37.22, 250.0;
+      64800, 29.44, 100.0;
+      68400, 29.44, 20.0;
+      72000, 29.44, 0.0;
+      75600, 29.44, 0.0;
+      79200, 29.44, 0.0;
+      82800, 29.44, 0.0;
+      86400, 29.44, 0.0
     ],
     columns = {2, 3},  // Keep the column references consistent
     smoothness = Modelica.Blocks.Types.Smoothness.LinearSegments);

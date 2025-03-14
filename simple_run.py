@@ -152,12 +152,13 @@ if os.path.exists(data_file):
         ax4.legend(fontsize=12)
         
         # Plot temperature gradients
-        ax5.plot(time_labels, data["mixtureTemperature_C"] - data["cylinderMixtureTemperature_C"], 'r-', linewidth=2, label="Vessel-Cylinder ΔT")
-        ax5.plot(time_labels, data["cylinderMixtureTemperature_C"] - data["groundTemperature_C"], 'b-', linewidth=2, label="Cylinder-Ground ΔT")
-        ax5.set_title("Temperature Gradients", fontsize=16)
+        ax5.plot(time_labels, data["mixtureTemperature_C"] - data["cylinderMixtureTemperature_C"], 'b-', linewidth=2, label="Vessel-Cylinder ΔT")
+        ax5.axhline(y=10.0, color='r', linestyle='--', label="Minimum ΔT (10°C)")
+        ax5.set_title("Temperature Difference for Stirling Operation", fontsize=16)
         ax5.set_ylabel("ΔT (°C)", fontsize=12)
         ax5.set_xlabel("Time", fontsize=12)
         ax5.legend(fontsize=12)
+        ax5.fill_between(time_labels, 0, 10.0, color='red', alpha=0.1, label="Below Operating Threshold")
         
         plt.tight_layout()
         print("Saving plots...")
