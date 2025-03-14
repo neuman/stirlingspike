@@ -8,6 +8,7 @@ model SimpleSystem
   parameter Real panelThermalConductivity = 237.0 "Thermal conductivity of panel (aluminum) in W/(m.K)";
   parameter Real panelThickness = 0.005 "Thickness of the panel in m";
   parameter Real panelEfficiency = 0.18 "Solar panel energy conversion efficiency at standard test conditions (25°C)";
+  parameter Real panelElectricalEfficiency = 0.85 "Electrical efficiency of panel (accounting for resistance losses)";
   parameter Real temperatureCoefficient = -0.004 "Temperature coefficient of efficiency (%/°C)";
   parameter Real referenceTemperature = 298.15 "Reference temperature (25°C) in K";
   
@@ -153,7 +154,8 @@ equation
   // Calculate solar power and energy conversion
   totalSolarPower = solarIrradiance * panelArea;
   electricalPowerOutput = totalSolarPower * panelEfficiency * (1 + temperatureCoefficient * (panelTemperature - referenceTemperature));
-  thermalPowerAbsorbed = totalSolarPower * (panelAbsorptivity - panelEfficiency);
+  thermalPowerAbsorbed = totalSolarPower * panelAbsorptivity * (1 - panelEfficiency) + 
+                        electricalPowerOutput * (1 - panelElectricalEfficiency);
   
   // Heat transfer from panel to vessel (direct contact)
   heatTransferPanelToVessel = contactConductance * contactArea * (panelTemperature - mixtureTemperature);
