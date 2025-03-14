@@ -17,7 +17,12 @@ model SimpleSystem
   parameter Real vesselWallArea = 1.5 "Surface area of the vessel wall in m^2";
   parameter Real vesselWallThickness = 0.01 "Thickness of the vessel wall in m";
   parameter Real vesselWallThermalConductivity = 16.0 "Thermal conductivity of vessel wall (steel) in W/(m.K)";
-  parameter Real contactArea = 0.2 "Contact area between panel and vessel in m^2";
+  parameter Real contactArea = 0.4 "Contact area between panel and vessel in m^2";
+  parameter Real stirlingContactArea = 0.15 "Contact area between vessel and Stirling engine in m^2";
+  parameter Real vesselInsulationThickness = 0.1 "Thickness of vessel insulation in m";
+  parameter Real vesselInsulationThermalConductivity = 0.035 "Thermal conductivity of vessel insulation in W/(m.K)";
+  parameter Real vesselExposedArea = vesselWallArea - contactArea - stirlingContactArea "Area of vessel exposed to environment in m^2";
+  parameter Real vesselInsulatedArea = vesselWallArea - vesselExposedArea "Area of vessel that is insulated in m^2";
   
   // Parameters for the glycol-water mixture (25% glycol)
   parameter Real mixtureDensity = 1038.0 "Density of 25% glycol-water mixture in kg/m^3";
@@ -50,17 +55,17 @@ model SimpleSystem
   
   // NEW: Parameters for the Stirling engine
   parameter Real stirlingEngineEfficiency = 0.5 "Efficiency of the Stirling engine";
-  parameter Real stirlingMinimumTemperatureDifference = 15.0 "Minimum temperature difference for Stirling engine operation in K";
-  parameter Real stirlingHeatTransferCoefficient = 100.0 "Heat transfer coefficient for Stirling engine in W/(m^2.K)";
-  parameter Real stirlingContactAreaHot = 0.15 "Contact area between vessel and Stirling engine (hot side) in m^2";
-  parameter Real stirlingContactAreaCold = 0.15 "Contact area between cylinder and Stirling engine (cold side) in m^2";
+  parameter Real stirlingMinimumTemperatureDifference = 10.0 "Minimum temperature difference for Stirling engine operation in K";
+  parameter Real stirlingHeatTransferCoefficient = 200.0 "Heat transfer coefficient for Stirling engine in W/(m^2.K)";
+  parameter Real stirlingContactAreaHot = 0.3 "Contact area between vessel and Stirling engine (hot side) in m^2";
+  parameter Real stirlingContactAreaCold = 0.3 "Contact area between cylinder and Stirling engine (cold side) in m^2";
   parameter Real stirlingCarnotFactor = 0.4 "Factor of ideal Carnot efficiency achievable";
   
   // Environment parameters
   parameter Real stefanBoltzmannConstant = 5.67e-8 "Stefan-Boltzmann constant in W/(m^2.K^4)";
   parameter Real panelConvectionCoefficient = 12.0 "Convective heat transfer coefficient for panel in W/(m^2.K)";
-  parameter Real vesselConvectionCoefficient = 8.0 "Convective heat transfer coefficient for vessel in W/(m^2.K)";
-  parameter Real contactConductance = 200.0 "Thermal contact conductance between panel and vessel in W/(m^2.K)";
+  parameter Real vesselConvectionCoefficient = 3.0 "Convective heat transfer coefficient for vessel in W/(m^2.K)";
+  parameter Real contactConductance = 500.0 "Thermal contact conductance between panel and vessel in W/(m^2.K)";
   
   // Import CombiTimeTable for reading external data
   import Modelica.Blocks.Sources.CombiTimeTable;
@@ -158,8 +163,11 @@ equation
                       (max(panelTemperature, ambientTemperature)^4 - min(panelTemperature, ambientTemperature)^4);
   convectiveLossPanel = panelConvectionCoefficient * panelArea * (panelTemperature - ambientTemperature);
   
-  // Heat loss from vessel to environment
-  heatLossVessel = vesselConvectionCoefficient * vesselWallArea * (mixtureTemperature - ambientTemperature);
+  // Heat loss from vessel to environment (now with insulation)
+  heatLossVessel = vesselConvectionCoefficient * vesselExposedArea * (mixtureTemperature - ambientTemperature) +
+                   vesselInsulatedArea * (mixtureTemperature - ambientTemperature) / 
+                   (vesselWallThickness/vesselWallThermalConductivity + 
+                    vesselInsulationThickness/vesselInsulationThermalConductivity);
   
   // Stirling engine calculations with smoothing
   stirlingTemperatureDifference = max(0, mixtureTemperature - cylinderMixtureTemperature);
