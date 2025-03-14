@@ -128,9 +128,21 @@ model SimpleSystem
   Real stirlingActualEfficiency "Actual efficiency of the Stirling engine";
   Real stirlingTotalPowerOutput "Total electrical power output from both solar panel and Stirling engine in W";
   
+  // Simple function to smooth transitions
+  function smoothStep
+    input Real x;
+    input Real x1;
+    input Real y1;
+    input Real x2;
+    input Real y2;
+    output Real y;
+  algorithm
+    y := y1 + (y2 - y1) * max(0, min(1, (x - x1)/(x2 - x1)));
+  end smoothStep;
+  
 equation
-  // Get ambient temperature and solar irradiance from CSV
-  ambientTemperature = weatherData.y[1] + 273.15; // Convert from C to K
+  // Get ambient temperature and solar irradiance from weather data
+  ambientTemperature = weatherData.y[1] + 273.15;  // Convert from Celsius to Kelvin
   solarIrradiance = weatherData.y[2];
   
   // Calculate solar power and energy conversion
@@ -138,70 +150,77 @@ equation
   electricalPowerOutput = totalSolarPower * panelEfficiency * (1 + temperatureCoefficient * (panelTemperature - referenceTemperature));
   thermalPowerAbsorbed = totalSolarPower * (panelAbsorptivity - panelEfficiency);
   
-  // Heat transfer from panel to vessel
+  // Heat transfer from panel to vessel (direct contact)
   heatTransferPanelToVessel = contactConductance * contactArea * (panelTemperature - mixtureTemperature);
   
-  // Heat losses from panel to environment
-  radiativeLossPanel = panelEmissivity * stefanBoltzmannConstant * panelArea * (panelTemperature^4 - ambientTemperature^4);
+  // Heat losses from panel to environment (with smoothing for radiative term)
+  radiativeLossPanel = panelEmissivity * stefanBoltzmannConstant * panelArea * 
+                      (max(panelTemperature, ambientTemperature)^4 - min(panelTemperature, ambientTemperature)^4);
   convectiveLossPanel = panelConvectionCoefficient * panelArea * (panelTemperature - ambientTemperature);
   
   // Heat loss from vessel to environment
   heatLossVessel = vesselConvectionCoefficient * vesselWallArea * (mixtureTemperature - ambientTemperature);
   
-  // NEW: Stirling engine calculations
+  // Stirling engine calculations with smoothing
   stirlingTemperatureDifference = max(0, mixtureTemperature - cylinderMixtureTemperature);
   
-  // Theoretical Carnot efficiency
-  stirlingCarnotEfficiency = if stirlingTemperatureDifference > stirlingMinimumTemperatureDifference then 
-                               1 - cylinderMixtureTemperature/mixtureTemperature 
-                             else 
-                               0;
+  // Theoretical Carnot efficiency with smoothing
+  stirlingCarnotEfficiency = smoothStep(
+    stirlingTemperatureDifference,
+    stirlingMinimumTemperatureDifference,
+    0,
+    stirlingMinimumTemperatureDifference + 5,
+    1 - cylinderMixtureTemperature/mixtureTemperature
+  );
   
-  // Actual achievable efficiency (limited by stirlingCarnotFactor and max efficiency)
+  // Actual achievable efficiency
   stirlingActualEfficiency = min(stirlingEngineEfficiency, stirlingCarnotFactor * stirlingCarnotEfficiency);
   
-  // Heat flow calculations for Stirling engine
-  stirlingHeatFlowHot = if stirlingTemperatureDifference > stirlingMinimumTemperatureDifference then
-                          stirlingHeatTransferCoefficient * stirlingContactAreaHot * stirlingTemperatureDifference
-                        else
-                          0;
+  // Heat flow calculations for Stirling engine with smoothing
+  stirlingHeatFlowHot = stirlingHeatTransferCoefficient * stirlingContactAreaHot * 
+                        smoothStep(stirlingTemperatureDifference,
+                                 stirlingMinimumTemperatureDifference - 2,
+                                 0,
+                                 stirlingMinimumTemperatureDifference,
+                                 stirlingTemperatureDifference);
   
-  // Power output calculation - heat converted to electricity
+  // Power output calculation
   stirlingPowerOutput = stirlingHeatFlowHot * stirlingActualEfficiency;
   
-  // Heat flow to cold side (after conversion of some heat to electricity)
+  // Heat flow to cold side
   stirlingHeatFlowCold = stirlingHeatFlowHot - stirlingPowerOutput;
   
-  // Total electrical power output (solar panel + Stirling engine)
+  // Total electrical power output
   stirlingTotalPowerOutput = electricalPowerOutput + stirlingPowerOutput;
   
-  // NEW: Heat transfer from cylinder to ground (at bottom)
+  // Heat transfer from cylinder to ground (simplified)
   heatTransferCylinderToGround = cylinderGroundContactConductance * cylinderBottomArea * (cylinderMixtureTemperature - groundTemperature);
   
-  // Heat loss through insulated portion of cylinder
-  heatLossCylinderInsulated = cylinderInsulatedSurfaceArea * 
-                             (cylinderMixtureTemperature - ambientTemperature) / 
+  // Heat losses through cylinder (simplified)
+  heatLossCylinderInsulated = cylinderInsulatedSurfaceArea * (cylinderMixtureTemperature - ambientTemperature) / 
                              (cylinderWallThickness/cylinderWallThermalConductivity + 
                               cylinderInsulationThickness/cylinderInsulationThermalConductivity);
-  
-  // Heat loss through exposed portion of cylinder
-  heatLossCylinderExposed = vesselConvectionCoefficient * cylinderExposedSurfaceArea * 
-                           (cylinderMixtureTemperature - ambientTemperature);
+  heatLossCylinderExposed = vesselConvectionCoefficient * cylinderExposedSurfaceArea * (cylinderMixtureTemperature - ambientTemperature);
   
   // Energy balance for the panel
   panelMass * panelSpecificHeat * der(panelTemperature) = 
     thermalPowerAbsorbed - radiativeLossPanel - convectiveLossPanel - heatTransferPanelToVessel;
   
-  // UPDATED: Energy balance for the glycol-water mixture in the vessel
-  // Now includes heat flow to the Stirling engine
+  // Energy balance for the glycol-water mixture in the vessel
   mixtureMass * mixtureSpecificHeat * der(mixtureTemperature) = 
     heatTransferPanelToVessel - heatLossVessel - stirlingHeatFlowHot;
   
-  // UPDATED: Energy balance for the glycol-water mixture in the cylinder
-  // Now receives heat from the Stirling engine cold side
+  // Energy balance for the glycol-water mixture in the cylinder
   cylinderMixtureMass * mixtureSpecificHeat * der(cylinderMixtureTemperature) = 
     stirlingHeatFlowCold - heatTransferCylinderToGround - 
     heatLossCylinderInsulated - heatLossCylinderExposed;
   
-  annotation(experiment(StartTime = 0, StopTime = 86400, Tolerance = 1e-6, Interval = 3600));
+  annotation(
+    experiment(
+      StartTime = 0,
+      StopTime = 86400,
+      Tolerance = 1e-4,  // Relaxed tolerance
+      Interval = 3600
+    )
+  );
 end SimpleSystem;
