@@ -16,7 +16,7 @@ from .system import simulate_system
 from .sweeps import (
     base_grid,
     sensitivity_distance,
-    sensitivity_wind_assist,
+    sensitivity_cruise_speed,
     sensitivity_capacity_scale,
     sensitivity_charge_depth,
 )
@@ -53,8 +53,8 @@ def main():
     print("Running sensitivity sweeps…")
     df_dist = sensitivity_distance()
     df_dist.to_csv(RESULTS_DIR / "sensitivity_distance.csv", index=False)
-    df_wind = sensitivity_wind_assist()
-    df_wind.to_csv(RESULTS_DIR / "sensitivity_wind.csv", index=False)
+    df_speed = sensitivity_cruise_speed()
+    df_speed.to_csv(RESULTS_DIR / "sensitivity_cruise_speed.csv", index=False)
     df_scale = sensitivity_capacity_scale()
     df_scale.to_csv(RESULTS_DIR / "sensitivity_scale.csv", index=False)
     df_depth = sensitivity_charge_depth()
@@ -75,7 +75,7 @@ def main():
     F.fig_energy_density_comparison(list(CHEMISTRIES.values()))
     F.fig_chem_route_grid(df_grid)
     F.fig_distance_sensitivity(df_dist)
-    F.fig_wind_assist(df_wind)
+    F.fig_cruise_speed(df_speed)
     F.fig_capacity_scale(df_scale)
     F.fig_charge_depth(df_depth)
     F.fig_system_summary(df_grid, best, ROUTES[best["route_key"]])

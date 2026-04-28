@@ -106,17 +106,26 @@ def fig_chem_route_grid(df: pd.DataFrame):
 
 
 def fig_distance_sensitivity(df_dist: pd.DataFrame):
-    fig, ax = plt.subplots(figsize=(8, 5))
-    for i, key in enumerate(sorted(df_dist["chem_key"].unique())):
-        sub = df_dist[df_dist["chem_key"] == key]
-        ax.plot(sub["distance_km"], sub["cargo_consumed_fraction"] * 100,
-                marker="o", color=OKABE_ITO[i], label=key)
-    ax.axhline(10.0, color="grey", linestyle="--", alpha=0.5)
-    ax.text(11000, 10.5, "10% cargo-as-fuel target", color="grey", fontsize=9)
-    ax.set_xlabel("Voyage distance (km)")
-    ax.set_ylabel("Cargo fraction consumed for propulsion (%)")
-    ax.set_title("Cargo-as-fuel propulsion penalty vs voyage distance\n(45% wind assist, 30% aux engine efficiency)")
-    ax.legend()
+    """Replaces v0.2 cargo-as-fuel figure. New transport architecture
+    (autonomous wind-primary) makes voyage time the dominant cost driver,
+    not propulsion energy. Plot ships-required-per-1-GW-th-plant vs
+    distance, parameterized on cruise speed."""
+    fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+    speeds = sorted(df_dist["cruise_speed_kn"].unique())
+    for i, speed in enumerate(speeds):
+        sub = df_dist[df_dist["cruise_speed_kn"] == speed]
+        axes[0].plot(sub["distance_km"], sub["cycle_days"],
+                     marker="o", color=OKABE_ITO[i], label=f"{speed:.0f} kn cruise")
+        axes[1].plot(sub["distance_km"], sub["ships_required_1GWth"],
+                     marker="o", color=OKABE_ITO[i], label=f"{speed:.0f} kn cruise")
+    axes[0].set_xlabel("Voyage distance (km)")
+    axes[0].set_ylabel("Round-trip cycle (days)")
+    axes[0].set_title("Voyage cycle time vs distance\n(autonomous wind, includes 6-day buffer)")
+    axes[0].legend()
+    axes[1].set_xlabel("Voyage distance (km)")
+    axes[1].set_ylabel("Ships required per 1 GW-th plant")
+    axes[1].set_title("Fleet size vs distance\n(handysize-equivalent autonomous vessels)")
+    axes[1].legend()
     plt.tight_layout()
     out = FIG_DIR / "fig03_distance_sensitivity.png"
     plt.savefig(out)
@@ -124,18 +133,25 @@ def fig_distance_sensitivity(df_dist: pd.DataFrame):
     return out
 
 
-def fig_wind_assist(df: pd.DataFrame):
-    fig, ax = plt.subplots(figsize=(8, 5))
-    for i, key in enumerate(sorted(df["chem_key"].unique())):
-        sub = df[df["chem_key"] == key]
-        ax.plot(sub["wind_assist_fraction"] * 100, sub["cargo_consumed_fraction"] * 100,
-                marker="o", color=OKABE_ITO[i], label=key)
-    ax.set_xlabel("Wind-supplied fraction of propulsion (%)")
-    ax.set_ylabel("Cargo fraction consumed for aux propulsion (%)")
-    ax.set_title("Cargo-as-fuel sensitivity to wind-assist fraction\n4000 km voyage")
+def fig_cruise_speed(df: pd.DataFrame):
+    """LCOH vs autonomous-vessel cruise speed for primary routes."""
+    fig, ax = plt.subplots(figsize=(8.5, 5))
+    routes = df["route"].unique()
+    for i, r in enumerate(routes):
+        sub = df[df["route"] == r].sort_values("cruise_speed_kn")
+        ax.plot(sub["cruise_speed_kn"], sub["LCOH"],
+                marker="o", color=OKABE_ITO[i], label=r)
+    ax.axhspan(40, 60, color="grey", alpha=0.15, label="paper target band")
+    ax.axvline(7.0, color="black", linestyle="--", alpha=0.4)
+    ax.text(7.05, ax.get_ylim()[1] * 0.95, "design point\n(7 kn)",
+            ha="left", va="top", fontsize=9, color="grey")
+    ax.set_xlabel("Autonomous vessel cruise speed (knots)")
+    ax.set_ylabel("LCOH (USD / MWh-th)")
+    ax.set_title("LCOH sensitivity to autonomous vessel cruise speed\n"
+                 "(CaCl₂ passive pond chemistry; wind-only propulsion)")
     ax.legend()
     plt.tight_layout()
-    out = FIG_DIR / "fig04_wind_assist.png"
+    out = FIG_DIR / "fig04_cruise_speed.png"
     plt.savefig(out)
     plt.close()
     return out
@@ -204,9 +220,8 @@ def fig_system_summary(df_grid: pd.DataFrame, best_row, route_obj):
         ("Solar charging field\n{:.1f} km² aperture\n{:.0%} solar→chem".format(
             best_row["pond_area_km2"], best_row["solar_to_chem_efficiency"]),
          0.21, 0.50, OKABE_ITO[1]),
-        ("Maritime transport\n{} ships, {:.0f} km\n{:.1%} cargo as fuel".format(
-            int(best_row["ships_required"]), route_obj.distance_km,
-            best_row["cargo_consumed_fraction"]),
+        ("Autonomous wind\nshipping (Ladon-class)\n{} vessels, {:.0f} km\nwind-only".format(
+            int(best_row["ships_required"]), route_obj.distance_km),
          0.40, 0.50, OKABE_ITO[2]),
         ("Hydration plant\n{} MW-thermal\nη_react·distrib = 86%".format(
             int(best_row["plant_capacity_MWth"])),
@@ -339,11 +354,12 @@ def fig_energy_sankey(best_row, route_obj, chem_obj, voyage_obj):
     segs = [
         ("Optical / cover loss", optical_loss, "#9c9c9c"),
         ("Receiver / reaction loss", receiver_loss, "#bdbdbd"),
-        ("Cargo as propulsion", transport_loss, "#7570b3"),
         ("Reactor inefficiency", reactor_loss, "#a6761d"),
         ("Distribution loss", distribution_loss, "#666666"),
         ("Delivered heat", delivered_heat, OKABE_ITO[3]),
     ]
+    if transport_loss > 0.01:
+        segs.insert(2, ("Transport loss", transport_loss, "#7570b3"))
     total = sum(s[1] for s in segs)
     pos = seg_x
     label_anchors = []

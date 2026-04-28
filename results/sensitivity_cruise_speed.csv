@@ -1,0 +1,25 @@
+route_key,route,cruise_speed_kn,ships_required,LCOH
+atacama_southern_cone,Atacama -> Southern Cone,4.0,27,71.06846072686297
+atacama_southern_cone,Atacama -> Southern Cone,5.0,23,63.390064790588696
+atacama_southern_cone,Atacama -> Southern Cone,6.0,20,57.63126783838299
+atacama_southern_cone,Atacama -> Southern Cone,7.0,18,53.79206987024586
+atacama_southern_cone,Atacama -> Southern Cone,8.0,17,51.87247088617729
+atacama_southern_cone,Atacama -> Southern Cone,9.0,16,49.952871902108726
+atacama_southern_cone,Atacama -> Southern Cone,10.0,15,48.033272918040154
+atacama_southern_cone,Atacama -> Southern Cone,11.0,14,46.11367393397159
+morocco_baltic,Morocco -> Baltic,4.0,53,126.81456139236354
+morocco_baltic,Morocco -> Baltic,5.0,44,109.53817053574646
+morocco_baltic,Morocco -> Baltic,6.0,37,96.1009776472665
+morocco_baltic,Morocco -> Baltic,7.0,33,88.42258171099223
+morocco_baltic,Morocco -> Baltic,8.0,30,82.66378475878652
+morocco_baltic,Morocco -> Baltic,9.0,27,76.90498780658082
+morocco_baltic,Morocco -> Baltic,10.0,25,73.06578983844369
+morocco_baltic,Morocco -> Baltic,11.0,23,69.22659187030655
+egypt_blacksea,Egypt -> Black Sea,4.0,33,86.9082100597261
+egypt_blacksea,Egypt -> Black Sea,5.0,28,77.31021513938327
+egypt_blacksea,Egypt -> Black Sea,6.0,24,69.63181920310899
+egypt_blacksea,Egypt -> Black Sea,7.0,22,65.79262123497186
+egypt_blacksea,Egypt -> Black Sea,8.0,20,61.953423266834726
+egypt_blacksea,Egypt -> Black Sea,9.0,18,58.11422529869758
+egypt_blacksea,Egypt -> Black Sea,10.0,17,56.19462631462902
+egypt_blacksea,Egypt -> Black Sea,11.0,16,54.275027330560455

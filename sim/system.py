@@ -68,11 +68,15 @@ DEFAULTS = dict(
     source_BoP_per_GW_th=120.0e6,   # USD per GW-thermal of equiv export capacity
     # Hydration plant capex per MW-th delivered
     dest_capex_USD_per_MWth=420.0e3,
-    # Bulk carrier (handysize, wind-augmented retrofit)
-    ship_capex_M_USD=42.0,
+    # Autonomous wind-primary cargo vessel (Ladon-class).
+    # Capex premium (~1.5x) over a comparable conventional handysize covers
+    # wing-sail rig, autonomy stack, sensor/comms, and certification overhead.
+    # Vendor-specific number should replace this once Ladon engagement happens.
+    ship_capex_M_USD=60.0,
     ship_lifetime_yr=25.0,
-    # OPEX as fraction of capex (annual)
-    opex_fraction=0.045,
+    # OPEX as fraction of capex (annual). Lower than conventional bulker
+    # because autonomous = zero crew opex (~$1M/yr/ship saved on a handysize).
+    opex_fraction=0.030,
     # Salt make-up rate per cycle (replaces degradation)
     makeup_fraction_per_cycle=0.001,
     # Carbon intensities for embodied capex (very rough)
@@ -112,9 +116,9 @@ def simulate_system(
     U_loss_W_m2_K: float = 4.5,
     eta_chem: float | None = None,
     water_capture_fraction: float | None = None,
-    wind_assist_fraction: float = 0.45,
+    wind_assist_fraction: float = 1.0,           # autonomous wind-primary
     cargo_dwt_t: float = 35000.0,
-    cruise_speed_kn: float = 10.0,
+    cruise_speed_kn: float = 7.0,                # autonomous wind, slower than 10 kn diesel
     overrides: dict | None = None,
 ) -> SystemResult:
     chem = CHEMISTRIES[chem_key]

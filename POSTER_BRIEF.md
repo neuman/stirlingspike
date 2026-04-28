@@ -1,32 +1,35 @@
-# Solar Salt Heat Export — One-Page Brief
+# Solar Salt Heat Export — One-Page Brief (v0.3)
 
-**Closed-loop solar thermochemical heat export from arid coasts to dirty-grid winter markets.**
+**Closed-loop solar thermochemical heat export from arid coasts to
+dirty-grid winter markets, transported by autonomous wind-primary cargo
+vessels (Ladon-class).**
 
 ## What
 
 Charge inorganic salt hydrates with desert sun. Ship the dry salt to cold
-cities. Release stored heat by hydrating the salt at a district-heating
-plant. Return the wet salt for re-charging.
+cities on uncrewed wing-sail freighters. Release stored heat by hydrating
+the salt at a district-heating plant. Return the wet salt for re-charging.
 
-## Headline numbers (from end-to-end simulation)
+## Headline numbers (from end-to-end simulation, v0.3)
 
-| | Best case | Notes |
+| | Short-haul best | Long-haul best |
 |---|---|---|
-| Working fluid | CaCl₂·6H₂O ↔ CaCl₂·2H₂O | passive solar pond charging at 95 °C |
-| Route | Atacama → Southern Cone | 1,800 km, DNI 3,500 kWh/m²/yr |
-| Levelized cost of heat | **$46.5 / MWh-thermal** | competitive with current natural-gas heating |
-| Round-trip thermal efficiency | **74%** | solar→stored→delivered after all losses |
-| Annual CO₂ avoided per 1 GW-th plant | **832 kt** | displaces gas-fired district heating |
-| Pond area | **9.3 km²** | + 12 km² port BoP |
-| Freshwater coproduction | **5.9 Mm³/yr** = 1.34 m³/MWh | desert site, captured as condensate under pond cover |
-| Cargo-as-fuel (wind + salt-hydration aux) | **7.6%** of cargo | for 1,800 km voyage |
+| Working fluid | CaCl₂·6H₂O ↔ CaCl₂·2H₂O (passive pond) | CaCl₂·6H₂O ↔ CaCl₂ (deep CSP) |
+| Route | Atacama → Southern Cone (1,800 km) | Pilbara → N. China (8,000 km) |
+| LCOH | **$53.8 / MWh-th** | **$100.6 / MWh-th** |
+| Round-trip thermal efficiency | **80%** | 72% |
+| Annual CO₂ avoided per 1 GW-th plant | 832 kt | **1,533 kt** |
+| Pond / CSP field area | 8.6 km² | 6.2 km² |
+| Freshwater coproduction | 5.4 Mm³/yr | 2.9 Mm³/yr |
+| Fleet size (autonomous wind vessels) | 18 | 31 |
+| Round-trip cycle days | 16 | 56 |
 
 ## Figures
 
 - `fig01_energy_density.png` — energy density of candidate working fluids
 - `fig02_chem_route_grid.png` — LCOH and round-trip efficiency over chem×route grid
-- `fig03_distance_sensitivity.png` — cargo-as-fuel penalty vs voyage distance
-- `fig04_wind_assist.png` — sensitivity to wind-augmented propulsion
+- `fig03_distance_sensitivity.png` — voyage cycle days and fleet size vs distance
+- `fig04_cruise_speed.png` — LCOH sensitivity to autonomous vessel cruise speed
 - `fig05_capacity_scale.png` — LCOH and CO₂ scaling with plant size
 - `fig06_charge_depth.png` — CaCl₂ charge-depth tradeoff
 - `fig07_system_summary.png` — hero diagram of reference system
@@ -35,23 +38,32 @@ plant. Return the wet salt for re-charging.
 - `fig10_energy_waterfall.png` — 100 units of solar DNI → delivered heat
 - `fig11_deployment_trajectory.png` — cumulative deployment scenarios vs IEA NZE wedge
 
-## Crisp findings
+## Crisp findings (v0.3)
 
-1. **Cost-optimum architecture exists**: CaCl₂ + passive ponds + short-haul
-   shipping clears the $40-60/MWh band on 4 of 6 candidate routes.
-2. **Long-haul fails**: Pilbara → N. China and Namibia → NW Europe both
-   blow through the budget because cargo-as-fuel consumes >25% of payload.
-   Ironically these are the highest-carbon-displacement-per-plant routes.
-3. **Freshwater is real**: ~6 Mm³/yr per 1 GW-th plant from condensate.
-   In water-scarce source regions this is potentially a co-revenue stream
-   comparable in value to the heat itself.
-4. **Climate leverage requires Industrial Process Heat as primary market,
-   not just district heating**: the district-heating market caps total
-   reachable impact at ~0.4 Gt CO₂/yr; including industrial low-T heat
-   raises the ceiling to ~2 Gt CO₂/yr — the entire IEA NZE low-T heat wedge.
+1. **Two viability tiers, not one.** Short-haul + passive pond + low-density
+   salt clears the $40-66/MWh band on 3 of 6 candidate routes. Long-haul +
+   linear-Fresnel CSP + deep-dehydrated salt sits at $100-120/MWh — above
+   target but no longer architecturally broken.
+2. **Long-haul recovery is the v0.3 story.** Replacing cargo-as-fuel with
+   autonomous wind-primary shipping cut Pilbara → N. China LCOH from
+   $130 to $100/MWh and Namibia → NW Europe from $214 to $120/MWh. The
+   highest-CO₂-displacement-per-plant routes are now reachable.
+3. **Round-trip thermal efficiency is uniform across routes.** 58–80% on
+   every chemistry × route combination, vs. 35–74% in v0.2. The cargo-as-fuel
+   loss term that hurt long routes is gone.
+4. **Freshwater is real**: 2–6 Mm³/yr per 1 GW-th plant from condensate, a
+   plausible co-revenue stream in water-scarce source regions.
+5. **Climate ceiling raised.** v0.2 wedge of ~1.2 Gt CO₂/yr now ~1.6 Gt
+   CO₂/yr — about 80% of the IEA NZE low-T heat decarbonization wedge,
+   contingent on the autonomous-wind fleet build-out happening.
 
-## Top empirical risk
+## Top empirical risks
 
-Multi-cycle salt degradation. Modeling assumes 0.08%/cycle (literature
-midpoint). At 0.5%/cycle the LCOH rises from $46 to ~$70/MWh and the project
-slips a decade. Bench validation is the binding next step.
+1. **Multi-cycle salt degradation.** 0.08%/cycle assumed; at 0.5%/cycle the
+   LCOH rises by ~$25/MWh on every route. Binding bench item.
+2. **Autonomous-wind-cargo fleet capacity.** v0.3 needs 15–60 ships per
+   plant; vendor (e.g. Ladon Robotics) production capacity becomes a
+   first-order deployment constraint.
+3. **Cruise speed under realistic wind regimes.** Modeled at 7 kn average;
+   sensitivity (Figure 4) is roughly $5/MWh per knot. Real route-specific
+   wind statistics not yet plugged in.

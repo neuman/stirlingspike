@@ -35,41 +35,52 @@ def base_grid() -> pd.DataFrame:
 
 
 def sensitivity_distance() -> pd.DataFrame:
+    """Voyage-cycle days and ships-required as a function of distance, for
+    the autonomous wind-primary fleet at three cruise-speed assumptions.
+    Replaces the v0.2 cargo-as-fuel-vs-distance sweep, which is moot under
+    the new vessel architecture.
+    """
     rows = []
-    for chem_key in ("CaCl2_passive", "CaCl2_full", "MgOH2", "CaOH2"):
+    from .transport import simulate_voyage
+    chem = CHEMISTRIES["CaCl2_passive"]
+    for speed_kn in (5.0, 7.0, 9.0):
         for d in (500, 1000, 1500, 2000, 3000, 4000, 6000, 8000, 10000, 12000):
-            r = simulate_system(
-                chem_key, "morocco_baltic", plant_capacity_MWth=1000.0,
-                overrides={},
-            )
-            # override distance via patch: run a one-off custom voyage
-            from .system import simulate_system as _s
-            from .chemistries import CHEMISTRIES as C
-            from .routes import ROUTES as R
-            from .transport import simulate_voyage
-            chem = C[chem_key]
-            voyage = simulate_voyage(chem, distance_km=d, wind_assist_fraction=0.45)
+            voyage = simulate_voyage(chem, distance_km=d,
+                                     cruise_speed_kn=speed_kn,
+                                     wind_assist_fraction=1.0)
+            voyages_per_ship_per_year = 365.0 / voyage.cycle_days
+            # Reference plant: 1 GW-th, ~10 Mt salt/yr throughput
+            annual_salt_t = 10.0e6
+            voyages_required = annual_salt_t / voyage.cargo_dwt_t
+            ships_required = voyages_required / voyages_per_ship_per_year
             rows.append({
-                "chem_key": chem_key,
+                "cruise_speed_kn": speed_kn,
                 "distance_km": d,
-                "cargo_consumed_fraction": voyage.cargo_consumed_fraction,
-                "voyage_days": voyage.cycle_days,
+                "cycle_days": voyage.cycle_days,
+                "voyages_per_ship_per_year": voyages_per_ship_per_year,
+                "ships_required_1GWth": ships_required,
             })
     return pd.DataFrame(rows)
 
 
-def sensitivity_wind_assist() -> pd.DataFrame:
+def sensitivity_cruise_speed() -> pd.DataFrame:
+    """LCOH vs cruise speed for autonomous wind-primary vessels on the
+    primary routes. Replaces the v0.2 wind-assist-fraction sweep, which is
+    moot for wind-only vessels.
+    """
     rows = []
-    for chem_key in CHEMISTRIES:
-        for waf in np.linspace(0.0, 0.9, 10):
-            from .chemistries import CHEMISTRIES as C
-            from .transport import simulate_voyage
-            voyage = simulate_voyage(C[chem_key], distance_km=4000.0,
-                                     wind_assist_fraction=waf)
+    for route_key in ("atacama_southern_cone", "morocco_baltic", "egypt_blacksea"):
+        for speed_kn in np.linspace(4.0, 11.0, 8):
+            r = simulate_system(
+                "CaCl2_passive", route_key, plant_capacity_MWth=1000.0,
+                cruise_speed_kn=speed_kn, wind_assist_fraction=1.0,
+            )
             rows.append({
-                "chem_key": chem_key,
-                "wind_assist_fraction": waf,
-                "cargo_consumed_fraction": voyage.cargo_consumed_fraction,
+                "route_key": route_key,
+                "route": ROUTES[route_key].name,
+                "cruise_speed_kn": speed_kn,
+                "ships_required": r.ships_required,
+                "LCOH": r.LCOH_USD_per_MWh,
             })
     return pd.DataFrame(rows)
 

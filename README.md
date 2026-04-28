@@ -8,8 +8,10 @@ This repository contains:
 2. A faithful Python mirror (`sim/`) of the same equations, used as the
    numerical runner (parameter sweeps, figure generation) in environments
    where the OpenModelica compiler is not available.
-3. The v0.2 concept paper (`solar_salt_heat_export_concept_v0.2.md`) with
-   every quantitative TBD from v0.1 filled in by simulation.
+3. Concept paper v0.2 (`solar_salt_heat_export_concept_v0.2.md`) and
+   v0.3 (`solar_salt_heat_export_concept_v0.3.md`). v0.2 fills every
+   quantitative TBD from v0.1; v0.3 captures the autonomous-wind-shipping
+   architecture pivot and the resulting long-haul LCOH recovery.
 4. A poster-quality figure set in `figures/`.
 
 ## Why both Modelica and Python?
